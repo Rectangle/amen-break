@@ -4,6 +4,15 @@
  */
  
  
+
+ 
+var turnaround = 1; // set to 0 for the classic turnaround, 1 for random
+
+
+var bpm = 130;
+ 
+ 
+ 
 var bass_drum_harmonics = [1.0, 2.36, 1.72, 1.86, 2.72, 3.64, 4.5, 5.46];
 var snare_drum_harmonics = [1.0, 1.6, 2.13, 2.66, 2.3, 2.92, 3.5, 4.07, 4.24, 4.84];
 
@@ -41,6 +50,10 @@ function Drumhead(freq, harmonics, harmonic_power, decay, freq_decay, base_amp){
   var t = 0;
   
   return{
+    
+    set_freq : function(freq){
+      f = freq;
+    },
     
     set_decay : function (d){
       decay = d;
@@ -130,8 +143,6 @@ function Snaredrum(freq, decay, noise_amp, drumhead_amp){
 
 
 
-var bpm = 130;
-
 var beats = 0.0;
 
 
@@ -155,8 +166,6 @@ function each(b, beat, per_beat){
 }
 
 
-var turnaround = 1;
-
 
 export function dsp(t) {
  
@@ -172,6 +181,7 @@ export function dsp(t) {
   if (each(beats,0,0.25)) snare3.hit(1);
 
   if (beats%16 < 8){
+    
   
     if (each(beats,0,4)) bassdrum.hit(1);
     
@@ -223,11 +233,19 @@ export function dsp(t) {
       if (each(beats,1.75,4)) snare.hit(1);
       
       if (each(beats,2.25,4)) snare.hit(0.8);
-      if (each(beats,2.5,4)) bassdrum.hit(0.8); if (each(beats,2.5,4)) crash.hit(1);
+      if (each(beats,2.5,4)) {bassdrum.hit(0.8); crash.hit(1);}
       
       
       
-      if (each(beats,3.5,4)) snare.hit(0.9);
+      
+      
+      
+      if (each(beats,2+1/2,4)) snare.hit(0.2);
+      if (each(beats,2+3/4,4)) snare.hit(0.3);
+      if (each(beats,3,4)) snare.hit(0.5);
+      if (each(beats,3+1/4,4)) snare.hit(0.7);
+      if (each(beats,3+1/2,4)) snare.hit(0.6);
+      if (each(beats,3+3/4,4)) snare.hit(1);
       
       break;
       
@@ -235,7 +253,7 @@ export function dsp(t) {
       
       if (each(beats,0,0.25)){
         
-        if (Math.random() > 0.3) bassdrum.hit(Math.random());
+        if (Math.random() > 0.5) bassdrum.hit(Math.random());
         if (Math.random() > 0.4) snare.hit(Math.random());
         
         
