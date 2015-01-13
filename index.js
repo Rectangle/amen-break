@@ -16,6 +16,7 @@ var bpm = 130;
 var bass_drum_harmonics = [1.0, 2.36, 1.72, 1.86, 2.72, 3.64, 4.5, 5.46];
 var snare_drum_harmonics = [1.0, 1.6, 2.13, 2.66, 2.3, 2.92, 3.5, 4.07, 4.24, 4.84];
 
+
 function NoiseMaker(color, decay, base_amp){
   
   var w = 0;
@@ -153,8 +154,6 @@ function Cowbell(freq, base_amp){
   var v = 0;
   var t = 0;
   
-  var freq2 = freq * 1.44;
-  
   return {
     
     hit : function(vel){
@@ -169,17 +168,19 @@ function Cowbell(freq, base_amp){
         return 0;
       }
       
-      w += (t%(1/freq))*freq > 0.5 ? v*freq/sampleRate : -v*freq/sampleRate;
-      w += (t%(1/freq2))*freq2 > 0.5 ? v*freq/sampleRate : -v*freq/sampleRate;
       
-      if (t < 0.1){
-        v *= (1 - 40/sampleRate);
-        w *= (1 - 40/sampleRate);
+      for (var i in [1,1.44]){
+        var p = (t%(1/(freq*[1,1.44][i])))*(freq*[1,1.44][i]);
+        w += (p > 0.25 && p < 0.75) ? v*base_amp*freq/sampleRate : -v*base_amp*freq/sampleRate;
+      }
+      
+      if (t < 0.05){
+        v *= (1 - 60/sampleRate);
+        w *= (1 - 60/sampleRate);
       } else {
         v *= (1 - 20/sampleRate);
         w *= (1 - 20/sampleRate);
       }
-      
       
       
       return w;
@@ -198,7 +199,7 @@ var bassdrum = Bassdrum(110, 10, 5, 0.05, 1.5);
 
 var hihat = NoiseMaker(0, 30, 0.1);
 
-var snare = Snaredrum(220, 20, 0.2, 1);
+var snare = Snaredrum(220, 20, 0.2, 0.5);
 
 var crash = NoiseMaker(1, 5, 0.3);
 
@@ -238,7 +239,7 @@ export function dsp(t) {
   if (each(beats,0,0.25)) snare3.hit(1);
   
   
-  if (each(beats,0,1)) cowbell.hit(1);
+  if (each(beats,0.05,1)) cowbell.hit(1);
   
   if (each(beats,0,16)) crash.hit(1);
 
@@ -340,7 +341,8 @@ export function dsp(t) {
   
   var cowbellplay = cowbell.play();
   
+  
   return [
     bassdrumplay * 0.5 + hihatplay * 0.6 + snareplay * 0.4 + snare2play*0.5 + crashplay*0.3 + cowbellplay*0.2, 
-    bassdrumplay * 0.5 + hihatplay * 0.4 + snareplay * 0.6 + snare3play*0.5 + crashplay*0.7 + cowbellplay*0.8];
+    bassdrumplay * 0.5 + hihatplay * 0.4 + snareplay * 0.6 + snare3play*0.3 + crashplay*0.7 + cowbellplay*0.8];
 }
