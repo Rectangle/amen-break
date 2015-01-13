@@ -16,7 +16,6 @@ var bpm = 130;
 var bass_drum_harmonics = [1.0, 2.36, 1.72, 1.86, 2.72, 3.64, 4.5, 5.46];
 var snare_drum_harmonics = [1.0, 1.6, 2.13, 2.66, 2.3, 2.92, 3.5, 4.07, 4.24, 4.84];
 
-
 function NoiseMaker(color, decay, base_amp){
   
   var w = 0;
@@ -120,6 +119,7 @@ function Snaredrum(freq, decay, noise_amp, drumhead_amp){
   var drumhead = Drumhead(freq, snare_drum_harmonics, 1, decay, 0, drumhead_amp);
   var drumnoise = NoiseMaker(20, decay, noise_amp);
   
+  var t = 0;
   
   return{
     
@@ -131,10 +131,58 @@ function Snaredrum(freq, decay, noise_amp, drumhead_amp){
       v *= (Math.random()*2-1) * 0.2 + 1;
       this.drumhead.hit(v);
       this.drumnoise.hit(v);
+      t = 0;
+    },
+    
+    bounce : function(v){
+      this.hit(v);
     },
     
     play : function(){
+      t += 1/sampleRate;
       return this.drumhead.play() + this.drumnoise.play();
+    }
+    
+  };
+  
+}
+
+function Cowbell(freq, base_amp){
+  
+  var w = 0;
+  var v = 0;
+  var t = 0;
+  
+  var freq2 = freq * 1.44;
+  
+  return {
+    
+    hit : function(vel){
+      v = vel;
+      t = 0;  
+    },
+    
+    play : function(){
+      t += 1/sampleRate;
+      if (v*base_amp < 0.001) {
+        v = 0;
+        return 0;
+      }
+      
+      w += (t%(1/freq))*freq > 0.5 ? v*freq/sampleRate : -v*freq/sampleRate;
+      w += (t%(1/freq2))*freq2 > 0.5 ? v*freq/sampleRate : -v*freq/sampleRate;
+      
+      if (t < 0.1){
+        v *= (1 - 40/sampleRate);
+        w *= (1 - 40/sampleRate);
+      } else {
+        v *= (1 - 20/sampleRate);
+        w *= (1 - 20/sampleRate);
+      }
+      
+      
+      
+      return w;
     }
     
   };
@@ -158,6 +206,15 @@ var crash = NoiseMaker(1, 5, 0.3);
 var snare2 = Snaredrum(440, 50, 0.05, 0.0);
 var snare3 = Snaredrum(440, 50, 0.05, 0.1);
 
+var cowbell = Cowbell(587, 2);
+
+
+function compress(w){
+  return Math.atan(w*(Math.PI/2))/(Math.PI/2);
+}
+function compress2(w){
+  return [Math.atan(w[0]*(Math.PI/2))/(Math.PI/2), Math.atan(w[1]*(Math.PI/2))/(Math.PI/2)];
+}
 
 function at(t1,t2){return (t1 >= t2 && t1 <= t2+1/sampleRate);}
 
@@ -179,6 +236,11 @@ export function dsp(t) {
   
   if (each(beats,0,0.5)) snare2.hit(1);
   if (each(beats,0,0.25)) snare3.hit(1);
+  
+  
+  if (each(beats,0,1)) cowbell.hit(1);
+  
+  if (each(beats,0,16)) crash.hit(1);
 
   if (beats%16 < 8){
     
@@ -190,7 +252,7 @@ export function dsp(t) {
     if (each(beats,1,4)) snare.hit(0.9);
     
     
-    if (each(beats,1.75,4)) snare.hit(1);
+    if (each(beats,1.75,4)) snare.bounce(1);
     
     if (each(beats,2.25,4)) snare.hit(0.8);
     if (each(beats,2.5,4)) bassdrum.hit(0.8);
@@ -275,8 +337,10 @@ export function dsp(t) {
   var snare3play = snare3.play();
   
   var crashplay = crash.play();
-    
-    return [
-      bassdrumplay * 0.5 + hihatplay * 0.6 + snareplay * 0.4 + snare2play*0.5 + crashplay*0.3, 
-      bassdrumplay * 0.5 + hihatplay * 0.4 + snareplay * 0.6 + snare3play*0.5 + crashplay*0.7];
+  
+  var cowbellplay = cowbell.play();
+  
+  return [
+    bassdrumplay * 0.5 + hihatplay * 0.6 + snareplay * 0.4 + snare2play*0.5 + crashplay*0.3 + cowbellplay*0.2, 
+    bassdrumplay * 0.5 + hihatplay * 0.4 + snareplay * 0.6 + snare3play*0.5 + crashplay*0.7 + cowbellplay*0.8];
 }
